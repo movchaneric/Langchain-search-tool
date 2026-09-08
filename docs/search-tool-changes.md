@@ -32,6 +32,10 @@ Both branches converge on the same output shape, `Candidate` (from
 was taken. `finalValidate.ts` then sits after that as a last-mile guard that
 enforces the stricter, client-facing `SearchAnswer` shape.
 
+All of the above is wired together into one callable chain in
+`searchChain.ts`, whose exported `runSearch(input)` is the single entry
+point the rest of the app is meant to call.
+
 ---
 
 ## `agent/src/search_tool/types.ts`
@@ -321,6 +325,42 @@ self-repair attempt instead of failing the whole request.
   `unknown`, this type-checked fine but would validate a `Promise` object
   instead of the resolved `SearchAnswer` at runtime, so the repair path
   could never succeed. Added the missing `await`.
+
+---
+
+## `agent/src/search_tool/searchChain.ts`
+
+Wires every previous piece together into the one runnable chain (and public
+entry point) the rest of the app actually calls.
+
+```ts
+export const searchChain = RunnableSequence.from([
+  routerStep,          // { q } -> { q, mode }
+  branch,               // -> Candidate (web or direct pipeline)
+  finalValidateAndPolish, // -> SearchAnswer
+]);
+
+export async function runSearch(input: SearchInput) {
+  return await searchChain.invoke(input);
+}
+```
+
+- `branch` is a `RunnableBranch`: it checks `input.mode === "web"` (set by
+  `routerStep`/`routeStrategy`) and routes to `wepBasePath` if true,
+  otherwise falls through to the default runnable, `directBasePath`. This
+  is the actual fork between the two strategies described at the top of
+  this document — everything upstream (`routeStrategy.ts`) only *decides*
+  the mode, this is where that decision is *acted on*.
+- `finalValidateAndPolish` always runs last regardless of which branch was
+  taken, so both pipelines' output gets the same repair/validation pass
+  before leaving the agent.
+- `runSearch(input)` is the single exported function meant to be called
+  from outside `search_tool/` (e.g. an API route) — it takes a raw
+  `SearchInput` (`{ q }`) and returns the final validated `SearchAnswer`.
+
+No bugs found here — the only change was dropping an unused `routeStrategy`
+import (`routerStep` already wraps it, so importing the raw function too
+was dead code).
 
 ---
 
