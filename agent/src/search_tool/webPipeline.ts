@@ -12,6 +12,7 @@ import { summerize } from "../utils/summerize";
 import { Candidate } from "./types";
 import { getChatModel } from "../shared/models";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { getDirectAnswer } from "./directPipeline";
 
 const setTopResults = 5;
 
@@ -91,29 +92,9 @@ export const composeStep = RunnableLambda.from(
   }): Promise<Candidate> => {
     const model = getChatModel({ temperature: 0.2 });
 
-    // No page summerize arrived -> redirect directly to LLM 
+    // No page summeries arrived -> redirect directly to the LLM
     if (!input.pageSummeries || input.pageSummeries.length === 0) {
-      const directResponseFromModel = await model.invoke([
-        new SystemMessage(
-          [
-            "you answer briefly and clearly for beginners",
-            "if unsure say no",
-          ].join("\n"),
-        ),
-        new HumanMessage(input.q),
-      ]);
-
-      const directAnswer = (
-        typeof directResponseFromModel.content === "string"
-          ? directResponseFromModel.content
-          : String(directResponseFromModel.content)
-      ).trim();
-
-      return {
-        answer: directAnswer,
-        sources: [],
-        mode: "direct",
-      };
+      return getDirectAnswer(input.q);
     }
 
     // Have page summeries
