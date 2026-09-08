@@ -22,11 +22,15 @@ routeStrategy.ts   → decides "web" or "direct"
   ├── mode = "direct" → directPipeline.ts        → Candidate
   │
   └── mode = "web"     → webPipeline.ts (3 steps) → Candidate
+                                                        │
+                                                        ▼
+                                          finalValidate.ts → SearchAnswer
 ```
 
 Both branches converge on the same output shape, `Candidate` (from
 `types.ts`), so whatever calls this agent doesn't need to know which path
-was taken.
+was taken. `finalValidate.ts` then sits after that as a last-mile guard that
+enforces the stricter, client-facing `SearchAnswer` shape.
 
 ---
 
@@ -98,6 +102,14 @@ actual user question was being silently dropped before ever reaching the
 model. Fixed by making it a sibling entry in the messages array:
 `[new SystemMessage(...), new HumanMessage(input.q)]`.
 
+**Refactor — `getDirectAnswer(q)`:** the actual "ask the model with no
+context" logic is exported as its own async function, `getDirectAnswer`,
+and `directBasePath` is now a thin `RunnableLambda` wrapper around it. This
+exists so `webPipeline.ts`'s `composeStep` can call the exact same function
+for its own no-page-summaries fallback instead of re-implementing the same
+prompt + model call a second time (see dedup note under `webPipeline.ts`
+below).
+
 ---
 
 ## `agent/src/search_tool/webPipeline.ts`
@@ -146,13 +158,21 @@ downstream. Added the `return { ...input, pageSummeries: ... }`.
 Takes `{ q, pageSummeries, mode, fallback }` and asks the chat model to
 write the final answer:
 - If there are no page summaries (shouldn't normally happen given step 2's
-  fallback, but handled defensively), it falls back to a direct
-  model answer, same as `directPipeline.ts`.
+  fallback, but handled defensively), it delegates straight to
+  `getDirectAnswer(input.q)` from `directPipeline.ts` — see the dedup note
+  below.
 - Otherwise, it prompts the model with the question plus the JSON-encoded
   page summaries, instructing it to answer using *only* the provided
   summaries (no invented facts), 5–8 sentences.
 - Returns `{ answer, sources, mode: "web" }`, where `sources` is the list of
   URLs whose summaries were used.
+
+**Dedup fix:** this no-page-summaries branch originally re-implemented the
+exact same "ask the model with no context" call already written in
+`directPipeline.ts` (same system prompt, same shape), just copy-pasted.
+Replaced the whole block with a single call to the shared
+`getDirectAnswer(input.q)` helper exported from `directPipeline.ts`, so
+there's now one place that owns the "no context available" prompt.
 
 **Bug fixed here (same class of bug as `directPipeline.ts`):** the
 `HumanMessage` containing the question + JSON summaries was nested as a
@@ -209,6 +229,11 @@ provider SDK directly — swapping providers is a single env var change.
   non-empty summary output.
 - `SearchInputSchema` — the top-level `{ q }` input, requiring at least 5
   characters so overly vague queries are rejected early.
+- `SearchAnswerSchema` — the final, client-facing output shape:
+  `{ answer: string (non-empty), sources: string[] (valid URLs, defaults
+  to []) }`. Stricter than `Candidate` (drops `mode`, and requires `sources`
+  entries to actually be URLs) since this is what leaves the agent, used by
+  `finalValidate.ts`.
 
 **Purpose:** validation happens at the boundaries (tool inputs/outputs),
 so bad data is caught immediately with a clear error instead of causing
@@ -258,6 +283,47 @@ Given raw page text, asks the chat model for a short, factual summary:
 
 ---
 
+## `agent/src/search_tool/finalValidate.ts`
+
+A last-mile guard that runs after a `Candidate` comes out of either
+pipeline, enforcing the stricter `SearchAnswer` shape before anything
+leaves the agent:
+
+1. Builds `finalDraft = { answer: candidate.answer, sources: candidate.sources ?? [] }`.
+2. Validates it against `SearchAnswerSchema` with `safeParse` (no throw).
+   If it already matches, return it as-is.
+3. If it doesn't match (e.g. a `sources` entry isn't a valid URL, or
+   `answer` came back empty), it asks the chat model to **repair** the
+   JSON via `repairSearchAnswer(obj)`: sends the malformed draft to the
+   model with instructions to return the same shape as valid JSON only
+   (no prose/markdown), then re-validates the repaired result with
+   `SearchAnswerSchema.safeParse` before returning it.
+
+This exists as a safety net — the pipelines *should* always produce
+well-formed answers, but if a model ever returns something slightly off
+(a non-URL "source", stray whitespace, etc.), this gives it one automatic
+self-repair attempt instead of failing the whole request.
+
+**Bugs fixed here:**
+- The return type on `repairSearchAnswer` was written as
+  `Promise<(answer: string, sources: string[])>`, which isn't valid
+  TypeScript — the `(...)` after `Promise<` is parsed as the start of a
+  function type, so the compiler expected `=>` next and errored with
+  `'=>' expected`. Replaced it with the real `SearchAnswer` type imported
+  from `schemas.ts`.
+- `repairSearchAnswer` had no implementation (just declared `model` and
+  never used it or returned anything), despite `finalValidateAndPolish`
+  already calling and discarding its result. Implemented it: send the
+  malformed object to the model, parse its JSON response, validate with
+  `SearchAnswerSchema.parse`.
+- The initial call site was `const repaired = repairSearchAnswer(finalDraft)`
+  — missing `await` on an `async` function. Since `safeParse` accepts
+  `unknown`, this type-checked fine but would validate a `Promise` object
+  instead of the resolved `SearchAnswer` at runtime, so the repair path
+  could never succeed. Added the missing `await`.
+
+---
+
 ## Summary of bugs fixed during this change set
 
 | File | Bug | Fix |
@@ -267,3 +333,7 @@ Given raw page text, asks the chat model for a short, factual summary:
 | `webPipeline.ts` (`openAndSummerizeStep`) | Step computed a result but never returned anything | Added `return { ...input, pageSummeries, fallback }` |
 | `webPipeline.ts` (`composeStep`) | Same `HumanMessage`-as-2nd-arg bug as `directPipeline.ts` | Same fix — separate message entry |
 | `routeStrategy.ts` / `webPipeline.ts` | Minor syntax cleanup (redundant parens, double spaces, inconsistent quote/semicolon style) | Aligned with rest of file |
+| `directPipeline.ts` / `webPipeline.ts` (`composeStep`) | Duplicated "ask model with no context" logic in two places | Extracted shared `getDirectAnswer(q)` in `directPipeline.ts`, called from both |
+| `finalValidate.ts` (`repairSearchAnswer`) | Invalid return type syntax `Promise<(answer: string, sources: string[])>` | Replaced with real `SearchAnswer` type |
+| `finalValidate.ts` (`repairSearchAnswer`) | Function body was empty despite being called for its result | Implemented: ask model to repair the JSON, validate with `SearchAnswerSchema.parse` |
+| `finalValidate.ts` (`finalValidateAndPolish`) | Missing `await` on `repairSearchAnswer(...)`, so the repair result was never actually validated | Added `await` |
