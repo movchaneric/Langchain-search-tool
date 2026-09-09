@@ -328,6 +328,54 @@ self-repair attempt instead of failing the whole request.
 
 ---
 
+## `agent/src/routes/search_lcel.ts`
+
+The Express route that exposes `searchChain` over HTTP: an Express `Router`
+with a single `POST /` handler (mounted at `/api/search` in `index.ts`, so
+the public path is `POST /api/search`).
+
+- Validates the request body with `SearchInputSchema.parse(req.body)` —
+  same schema `routerStep` uses internally, so a malformed body is rejected
+  here with a clear 400 instead of failing deeper in the chain.
+- Calls `runSearch(input)` and returns its `SearchAnswer` as JSON with a
+  200.
+- Any thrown error (schema validation, a failed model call, a Tavily
+  error, etc.) is caught and returned as `400 { error: message }` rather
+  than crashing the process or leaking a raw stack trace.
+
+**Bug fixed here:** `req`/`res` were typed using the global `Request`/
+`Response` (the Fetch API types built into the TS DOM lib), not Express's.
+That made `Router.post`'s handler fail to match any overload and made
+`res.status` resolve to the Fetch API's `Response.status` *property*
+instead of Express's `status()` *method* — two compile errors. Fixed by
+explicitly importing `type Request, type Response` from `"express"`.
+
+---
+
+## `agent/src/index.ts`
+
+The app's actual entry point (`main` in `package.json`, run via
+`tsx watch src/index.ts`) — previously an empty file. Boots the Express
+server that hosts `search_lcel.ts`:
+
+1. `import "dotenv/config"` first, before anything else — `shared/env.ts`
+   validates `process.env` at *import* time, so `.env` must be loaded into
+   `process.env` before that module is imported anywhere in the chain.
+2. Creates the Express `app`, applies `cors({ origin: env.ALLOWED_ORIGIN })`
+   and `express.json()` body parsing.
+3. Mounts `searchRouter` at `/api/search`.
+4. Adds a plain `GET /health` check (`{ ok: true }`) — useful for confirming
+   the process is up independent of the LLM/search machinery.
+5. Listens on `Number(env.PORT)`.
+
+Verified end-to-end against the real `agent/.env`: `GET /health` returns
+`200 {"ok":true}` with the expected `Access-Control-Allow-Origin` header,
+and `POST /api/search` with `{"q":"what is devops?"}` reaches the full
+`searchChain` (router → pipeline → validate) and returns a real answer once
+`GEMINI_MODEL` was pointed at a currently-supported model (see below).
+
+---
+
 ## `agent/src/search_tool/searchChain.ts`
 
 Wires every previous piece together into the one runnable chain (and public
@@ -377,3 +425,5 @@ was dead code).
 | `finalValidate.ts` (`repairSearchAnswer`) | Invalid return type syntax `Promise<(answer: string, sources: string[])>` | Replaced with real `SearchAnswer` type |
 | `finalValidate.ts` (`repairSearchAnswer`) | Function body was empty despite being called for its result | Implemented: ask model to repair the JSON, validate with `SearchAnswerSchema.parse` |
 | `finalValidate.ts` (`finalValidateAndPolish`) | Missing `await` on `repairSearchAnswer(...)`, so the repair result was never actually validated | Added `await` |
+| `routes/search_lcel.ts` | `Request`/`Response` resolved to the Fetch API's global DOM types instead of Express's, breaking `Router.post`'s overload match and `res.status(...)` | Imported `type Request, type Response` from `"express"` |
+| `agent/.env` (not committed — gitignored) | `GEMINI_MODEL=gemini-2.0-flash-lite` was rejected by Google's API as no longer available | Updated to `gemini-3.5-flash-lite`, Google's suggested replacement |
