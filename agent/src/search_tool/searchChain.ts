@@ -6,6 +6,7 @@ import { directBasePath } from "./directPipeline";
 import { routerStep } from "./routeStrategy";
 import { finalValidateAndPolish } from "./finalValidate";
 import { SearchInput } from "../utils/schemas";
+import { Candidate, RouterOutput } from "./types";
 
 // {q, mode -> web or direct
 
@@ -17,7 +18,7 @@ import { SearchInput } from "../utils/schemas";
 
 // JSON
 
-const branch = RunnableBranch.from<{ q: string; mode: "web" | "direct" }, any>([
+const branch = RunnableBranch.from<RouterOutput, Candidate>([
   [(input) => input.mode === "web", wepBasePath],
   directBasePath,
 ]);

@@ -9,16 +9,18 @@ import { RunnableLambda, RunnableSequence } from "@langchain/core/runnables";
 import { webSearchTool } from "../utils/webSearch";
 import { openUrl } from "../utils/openUrl";
 import { summerize } from "../utils/summerize";
-import { Candidate } from "./types";
+import { Candidate, RouterOutput, SearchMode } from "./types";
 import { getChatModel } from "../shared/models";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getDirectAnswer } from "./directPipeline";
 
 const setTopResults = 5;
 
+type SearchResultsInput = RouterOutput & { results: any[] };
+
 // Runnable 1
 export const webSearchStep = RunnableLambda.from(
-  async (input: { q: string; mode: "web" | "direct" }) => {
+  async (input: RouterOutput): Promise<SearchResultsInput> => {
     const results = await webSearchTool(input.q);
 
     return {
@@ -30,7 +32,7 @@ export const webSearchStep = RunnableLambda.from(
 
 // Runnable 2
 export const openAndSummerizeStep = RunnableLambda.from(
-  async (input: { q: string; mode: "web" | "direct"; results: any[] }) => {
+  async (input: SearchResultsInput) => {
     if (!Array.isArray(input.results) || input.results.length === 0) {
       return {
         ...input,
@@ -87,7 +89,7 @@ export const composeStep = RunnableLambda.from(
   async (input: {
     q: string;
     pageSummeries: Array<{ url: string; summary: string }>;
-    mode: "web" | "direct";
+    mode: SearchMode;
     fallback: "no-results" | "snippets" | "none";
   }): Promise<Candidate> => {
     const model = getChatModel({ temperature: 0.2 });

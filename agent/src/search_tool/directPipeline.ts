@@ -3,7 +3,7 @@
 // ask the model directl and get answer
 
 import { RunnableLambda } from "@langchain/core/runnables";
-import { Candidate } from "./types";
+import { Candidate, RouterOutput } from "./types";
 import { getChatModel } from "../shared/models";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -35,6 +35,5 @@ export async function getDirectAnswer(q: string): Promise<Candidate> {
 }
 
 export const directBasePath = RunnableLambda.from(
-  async (input: { q: string; mode: "web" | "direct" }): Promise<Candidate> =>
-    getDirectAnswer(input.q),
+  async (input: RouterOutput): Promise<Candidate> => getDirectAnswer(input.q),
 );

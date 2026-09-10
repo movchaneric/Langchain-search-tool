@@ -1,7 +1,8 @@
 import { RunnableLambda } from "@langchain/core/runnables";
 import { SearchInputSchema } from "../utils/schemas";
+import { RouterOutput, SearchMode } from "./types";
 
-export function routeStrategy(query: string): "web" | "direct" {
+export function routeStrategy(query: string): SearchMode {
   const trimmedQuery = query.toLowerCase().trim();
 
   const isLongQuery = trimmedQuery.length > 70;
@@ -43,11 +44,13 @@ export function routeStrategy(query: string): "web" | "direct" {
 // LCEL - > langchain express language
 // q: string, mode: web/direct
 
-export const routerStep = RunnableLambda.from(async (input: { q: string }) => {
-  const { q } = SearchInputSchema.parse(input);
+export const routerStep = RunnableLambda.from(
+  async (input: { q: string }): Promise<RouterOutput> => {
+    const { q } = SearchInputSchema.parse(input);
 
-  //decide the mode: web / direct
-  const mode = routeStrategy(q);
+    //decide the mode: web / direct
+    const mode = routeStrategy(q);
 
-  return { q, mode };
-});
+    return { q, mode };
+  },
+);
