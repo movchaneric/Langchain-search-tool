@@ -24,9 +24,9 @@ const branch = RunnableBranch.from<RouterOutput, Candidate>([
 ]);
 
 export const searchChain = RunnableSequence.from([
-  routerStep,
-  branch,
-  finalValidateAndPolish,
+  routerStep, // input {q}  => output {q, mode}
+  branch, // input {q, mode} => output  Candidate: {answer: string, sources: string[], mode: SearchMode; }
+  finalValidateAndPolish, // input: Candidate => output: 
 ]);
 
 export async function runSearch(input: SearchInput) {
