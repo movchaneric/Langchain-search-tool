@@ -5,10 +5,18 @@
 import { RunnableLambda } from "@langchain/core/runnables";
 import { Candidate, RouterOutput } from "./types";
 import { getChatModel } from "../shared/models";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import type { ChatMessage } from "../utils/schemas";
 
-export async function getDirectAnswer(q: string): Promise<Candidate> {
+export async function getDirectAnswer(
+  q: string,
+  history: ChatMessage[] = [],
+): Promise<Candidate> {
   const model = getChatModel({ temperature: 0.2 });
+
+  const historyMessages = history.map((m) =>
+    m.role === "user" ? new HumanMessage(m.content) : new AIMessage(m.content),
+  );
 
   const res = await model.invoke([
     new SystemMessage(
@@ -18,8 +26,10 @@ export async function getDirectAnswer(q: string): Promise<Candidate> {
         " - Be accurate and neutral",
         " - 5 to 8 sentences at max",
         " - If unsure, say so instead of inventing facts",
+        " - Use the prior conversation turns for context (e.g. 'it', 'that', follow-up requests like reformatting the last answer)",
       ].join("\n"),
     ),
+    ...historyMessages,
     new HumanMessage(q),
   ]);
 
@@ -35,5 +45,6 @@ export async function getDirectAnswer(q: string): Promise<Candidate> {
 }
 
 export const directBasePath = RunnableLambda.from(
-  async (input: RouterOutput): Promise<Candidate> => getDirectAnswer(input.q),
+  async (input: RouterOutput): Promise<Candidate> =>
+    getDirectAnswer(input.q, input.history),
 );

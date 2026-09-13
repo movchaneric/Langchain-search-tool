@@ -11,8 +11,9 @@ import { openUrl } from "../utils/openUrl";
 import { summerize } from "../utils/summerize";
 import { Candidate, RouterOutput, SearchMode } from "./types";
 import { getChatModel } from "../shared/models";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getDirectAnswer } from "./directPipeline";
+import type { ChatMessage } from "../utils/schemas";
 
 const setTopResults = 5;
 
@@ -91,13 +92,18 @@ export const composeStep = RunnableLambda.from(
     pageSummeries: Array<{ url: string; summary: string }>;
     mode: SearchMode;
     fallback: "no-results" | "snippets" | "none";
+    history?: ChatMessage[];
   }): Promise<Candidate> => {
     const model = getChatModel({ temperature: 0.2 });
 
     // No page summeries arrived -> redirect directly to the LLM
     if (!input.pageSummeries || input.pageSummeries.length === 0) {
-      return getDirectAnswer(input.q);
+      return getDirectAnswer(input.q, input.history);
     }
+
+    const historyMessages = (input.history ?? []).map((m) =>
+      m.role === "user" ? new HumanMessage(m.content) : new AIMessage(m.content),
+    );
 
     // Have page summeries
     const res = await model.invoke([
@@ -108,8 +114,10 @@ export const composeStep = RunnableLambda.from(
           " - Be accurate and neutral",
           " - 5 to 8 sentences at max",
           " - Use only the provided summeries, DO NOT invent new facts",
+          " - Use the prior conversation turns for context (e.g. 'it', 'that', follow-up requests like reformatting the last answer)",
         ].join("\n"),
       ),
+      ...historyMessages,
       new HumanMessage(
         [
           `Questions: ${input.q}`,

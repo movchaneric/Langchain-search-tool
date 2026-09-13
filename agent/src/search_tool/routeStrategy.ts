@@ -45,12 +45,12 @@ export function routeStrategy(query: string): SearchMode {
 // q: string, mode: web/direct
 
 export const routerStep = RunnableLambda.from(
-  async (input: { q: string }): Promise<RouterOutput> => {
-    const { q } = SearchInputSchema.parse(input);
+  async (input: unknown): Promise<RouterOutput> => {
+    const { q, history } = SearchInputSchema.parse(input);
 
     //decide the mode: web / direct
     const mode = routeStrategy(q);
 
-    return { q, mode };
+    return { q, mode, history };
   },
 );

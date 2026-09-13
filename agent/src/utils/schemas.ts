@@ -30,8 +30,16 @@ export const summerizeOutputSchema = z.object({
   summary: z.string().min(1),
 });
 
+export const ChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1),
+});
+
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
 export const SearchInputSchema = z.object({
   q: z.string().min(5, "Please ask specific query"),
+  history: z.array(ChatMessageSchema).max(20).optional().default([]),
 });
 
 export type SearchInput = z.infer<typeof SearchInputSchema>;
