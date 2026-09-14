@@ -12,6 +12,7 @@ const EnvSchema = z.object({
   GEMINI_MODEL: z.string().default("gpt-4o-mini"),
   GROQ_MODEL: z.string().default("llama-3.1-8b-instant"),
   SEARCH_PROVIDER: z.enum(["tavily"]).default("tavily"),
+  RAG_MODEL_PROVIDER: z.enum(["openai", "gemini"]).default("gemini"),
 });
 
 export const env = EnvSchema.parse(process.env);
