@@ -21,25 +21,6 @@ app.get("/docs.json", (_req, res) => {
   res.status(200).json(swaggerSpec);
 });
 
-/**
- * @openapi
- * /health:
- *   get:
- *     summary: Health check
- *     tags: [System]
- *     responses:
- *       200:
- *         description: Service is up
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               required: [ok]
- *               properties:
- *                 ok:
- *                   type: boolean
- *                   example: true
- */
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true });
 });

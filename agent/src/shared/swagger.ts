@@ -122,6 +122,113 @@ const swaggerSpec = swaggerJsdoc({
         },
       },
     },
+    // light_rag_router.ts and index.ts routes are kept comment-free, so their paths are declared here instead
+    paths: {
+      "/health": {
+        get: {
+          summary: "Health check",
+          tags: ["System"],
+          responses: {
+            "200": {
+              description: "Service is up",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["ok"],
+                    properties: { ok: { type: "boolean", example: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/kb/ingest": {
+        post: {
+          summary: "Chunk + embed text and add it to the in-memory knowledge base",
+          tags: ["Knowledge Base"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/IngestTextRequest" },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Ingestion summary",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/IngestResult" },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid input",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/kb/ask": {
+        post: {
+          summary: "Retrieve relevant chunks and answer the question grounded on them",
+          tags: ["Knowledge Base"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AskKBRequest" },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Grounded answer with per-chunk sources and a confidence score",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/KBAskResult" },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid input",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/kb/reset": {
+        post: {
+          summary: "Drop the in-memory vector store (dev/testing utility)",
+          tags: ["Knowledge Base"],
+          responses: {
+            "200": {
+              description: "Store cleared",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["ok"],
+                    properties: { ok: { type: "boolean", example: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   apis: [path.join(__dirname, "../routes/*.ts"), path.join(__dirname, "../index.ts")],
 });
