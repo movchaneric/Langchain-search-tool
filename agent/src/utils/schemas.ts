@@ -50,3 +50,13 @@ export const SearchAnswerSchema = z.object({
 });
 
 export type SearchAnswer = z.infer<typeof SearchAnswerSchema>;
+
+export const IngestTextRequestSchema = z.object({
+  text: z.string().min(1, "text is required"),
+  source: z.string().trim().min(1).optional(),
+});
+
+export const AskKBRequestSchema = z.object({
+  query: z.string().min(1, "query is required"),
+  k: z.coerce.number().int().min(1).max(20).optional(),
+});
