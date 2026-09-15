@@ -127,3 +127,30 @@ export function resetStore() {
   store = null;
   currentProvider = null;
 }
+
+export type StoredChunk = {
+  chunkId: string;
+  source: string;
+  content: string;
+  chunkIndex: number;
+  totalChunks: number;
+  tokenCount: number;
+};
+
+// reads the module-level store directly (not getVectorStore()) so listing
+// never lazily creates an embeddings client -- an empty KB just returns []
+export function listChunks(): StoredChunk[] {
+  if (!store) return [];
+
+  return store.memoryVectors.map((vector) => {
+    const meta = vector.metadata as ChunkMetadata;
+    return {
+      chunkId: meta.chunkId,
+      source: meta.source,
+      content: vector.content,
+      chunkIndex: meta.chunkIndex,
+      totalChunks: meta.totalChunks,
+      tokenCount: meta.tokenCount,
+    };
+  });
+}

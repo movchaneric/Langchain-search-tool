@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Search as SearchIcon, ExternalLink, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Search as SearchIcon, ExternalLink, RotateCcw, Database } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,12 +69,20 @@ export default function Home() {
               Ask a question — follow-ups remember what you asked before.
             </p>
           </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              <RotateCcw />
-              New chat
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/kb">
+                <Database />
+                Knowledge Base
+              </Link>
             </Button>
-          )}
+            {messages.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleReset}>
+                <RotateCcw />
+                New chat
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

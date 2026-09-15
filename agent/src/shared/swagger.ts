@@ -120,6 +120,25 @@ const swaggerSpec = swaggerJsdoc({
           required: ["error"],
           properties: { error: { type: "string" } },
         },
+        KBChunk: {
+          type: "object",
+          required: [
+            "chunkId",
+            "source",
+            "content",
+            "chunkIndex",
+            "totalChunks",
+            "tokenCount",
+          ],
+          properties: {
+            chunkId: { type: "string" },
+            source: { type: "string" },
+            content: { type: "string" },
+            chunkIndex: { type: "integer" },
+            totalChunks: { type: "integer" },
+            tokenCount: { type: "integer" },
+          },
+        },
       },
     },
     // light_rag_router.ts and index.ts routes are kept comment-free, so their paths are declared here instead
@@ -137,6 +156,31 @@ const swaggerSpec = swaggerJsdoc({
                     type: "object",
                     required: ["ok"],
                     properties: { ok: { type: "boolean", example: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/kb/chunks": {
+        get: {
+          summary: "List every chunk currently sitting in the in-memory knowledge base",
+          tags: ["Knowledge Base"],
+          responses: {
+            "200": {
+              description: "All ingested chunks",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["chunks"],
+                    properties: {
+                      chunks: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/KBChunk" },
+                      },
+                    },
                   },
                 },
               },

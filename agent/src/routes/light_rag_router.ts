@@ -2,9 +2,13 @@ import { Router, type Request, type Response } from "express";
 import { AskKBRequestSchema, IngestTextRequestSchema } from "../utils/schemas";
 import { ingestText } from "../light_rag_kb/ingest";
 import { askKB } from "../light_rag_kb/ask";
-import { resetStore } from "../light_rag_kb/store";
+import { resetStore, listChunks } from "../light_rag_kb/store";
 
 export const lightRagRouter = Router();
+
+lightRagRouter.get("/chunks", (_req: Request, res: Response) => {
+  res.status(200).json({ chunks: listChunks() });
+});
 
 lightRagRouter.post("/ingest", async (req: Request, res: Response) => {
   try {
