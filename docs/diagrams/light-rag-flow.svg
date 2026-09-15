@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -60 1250 760" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1e1e"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e"/>
+    </marker>
+  </defs>
+
+  <rect x="-50" y="-60" width="1250" height="760" fill="#ffffff"/>
+
+  <text x="575" y="-30" font-size="24" text-anchor="middle" fill="#1e1e1e">Light RAG — POST /api/kb/ingest + /api/kb/ask</text>
+
+  <!-- Ingest zone -->
+  <rect x="0" y="0" width="1150" height="220" rx="12" fill="#dbe4ff" fill-opacity="0.3" stroke="#4a9eed" stroke-width="1"/>
+  <text x="20" y="28" font-size="18" fill="#2563eb">Ingest Path (add docs)</text>
+
+  <rect x="20" y="80" width="190" height="90" rx="12" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="115" y="130" font-size="20" text-anchor="middle" fill="#1e1e1e">Add Text</text>
+
+  <rect x="270" y="80" width="190" height="90" rx="12" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="365" y="130" font-size="20" text-anchor="middle" fill="#1e1e1e">Chunk Text</text>
+  <line x1="210" y1="125" x2="262" y2="125" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="520" y="80" width="220" height="90" rx="12" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="630" y="130" font-size="20" text-anchor="middle" fill="#1e1e1e">Embed Chunks</text>
+  <line x1="460" y1="125" x2="512" y2="125" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="800" y="80" width="250" height="90" rx="12" fill="#c3fae8" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="925" y="130" font-size="20" text-anchor="middle" fill="#1e1e1e">Store in Memory</text>
+  <line x1="740" y1="125" x2="792" y2="125" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <!-- Ask zone -->
+  <rect x="0" y="260" width="1150" height="260" rx="12" fill="#e5dbff" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="20" y="288" font-size="18" fill="#6d28d9">Ask Path (query time)</text>
+
+  <rect x="20" y="340" width="170" height="90" rx="12" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="105" y="390" font-size="18" text-anchor="middle" fill="#1e1e1e">User Question</text>
+
+  <rect x="250" y="340" width="170" height="90" rx="12" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="335" y="390" font-size="18" text-anchor="middle" fill="#1e1e1e">Embed Query</text>
+  <line x1="190" y1="385" x2="242" y2="385" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="480" y="340" width="190" height="90" rx="12" fill="#c3fae8" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="575" y="390" font-size="18" text-anchor="middle" fill="#1e1e1e">Similarity Search</text>
+  <line x1="420" y1="385" x2="472" y2="385" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="730" y="340" width="180" height="90" rx="12" fill="#fff3bf" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="820" y="390" font-size="18" text-anchor="middle" fill="#1e1e1e">Build Context</text>
+  <line x1="670" y1="385" x2="722" y2="385" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="970" y="340" width="170" height="90" rx="12" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="1055" y="390" font-size="16" text-anchor="middle" fill="#1e1e1e">Grounded Answer</text>
+  <line x1="910" y1="385" x2="962" y2="385" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <!-- store -> search -->
+  <path d="M 925 170 L 925 230 L 575 230 L 575 332" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#arrowGreen)"/>
+  <text x="600" y="252" font-size="14" fill="#15803d">reads the same store</text>
+
+  <!-- Response -->
+  <rect x="460" y="560" width="260" height="90" rx="12" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+  <text x="590" y="600" font-size="15" text-anchor="middle" fill="#1e1e1e">Response + Sources +</text>
+  <text x="590" y="620" font-size="15" text-anchor="middle" fill="#1e1e1e">Confidence</text>
+  <path d="M 1055 430 L 1055 490 L 590 490 L 590 552" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow2)"/>
+</svg>

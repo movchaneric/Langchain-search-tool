@@ -9,7 +9,9 @@ A LangChain-powered agent with two independent pipelines, plus a Next.js client 
 
 `POST /api/search` — routes a query to either a direct LLM answer or a live web search, then validates the result before returning it.
 
-**Diagram:** https://excalidraw.com/#json=FuHm6eCH5mq12f8KFoD_5,6I0qeQCF399p9FQZBW1n9Q
+![Search pipeline flow](docs/diagrams/search-flow.svg)
+
+*([Open in Excalidraw](https://excalidraw.com/#json=FuHm6eCH5mq12f8KFoD_5,6I0qeQCF399p9FQZBW1n9Q) to edit)*
 
 1. **User Query** — the client sends `{ q, history }` to `POST /api/search`.
 2. **Router** — `routeStrategy` inspects the query (length, recent-year mentions, keywords like "best", "vs", "price", "latest") and decides `direct` or `web` mode.
@@ -24,7 +26,9 @@ A LangChain-powered agent with two independent pipelines, plus a Next.js client 
 
 Two paths share one in-memory vector store: one adds documents, the other answers questions grounded in them.
 
-**Diagram:** https://excalidraw.com/#json=sI46Wj22bzbkhHkJ1Yc7Q,qvswQAzA4vxKWwsTgeetDg
+![Light RAG flow](docs/diagrams/light-rag-flow.svg)
+
+*([Open in Excalidraw](https://excalidraw.com/#json=sI46Wj22bzbkhHkJ1Yc7Q,qvswQAzA4vxKWwsTgeetDg) to edit)*
 
 ### Ingest Path — `POST /api/kb/ingest`
 1. **Add Text** — the client submits raw text plus an optional source label.
